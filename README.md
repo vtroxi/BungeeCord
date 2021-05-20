@@ -1,26 +1,15 @@
-BungeeCord
-==========
-Layer 7 proxy designed to link Minecraft servers.
---------------------------------------------------
+# BungeeCord hotfix for DynDNS support
 
-BungeeCord is a sophisticated proxy and API designed mainly to teleport players between multiple Minecraft servers. It is the latest incarnation of similar software written by the author from 2011-present.
+**This is a simple hotfix for an issue, I had when running BungeeCord with subservers that were using DynDNS.**
 
-Information
------------
-BungeeCord is maintained by [SpigotMC](https://www.spigotmc.org/) and has its own [discussion thread](https://www.spigotmc.org/go/bungeecord) with plenty of helpful information and links.
+BungeeCord initially resolves the underlying IP of a server's hostname assuming that it does not change afterwards.
+This leads to servers becoming unreachable, after the dynamic IP address has changed.
 
-### Security warning
+*This fix automatically updates all stored ServerInfos after a connection attempt has failed, thus storing the new ip address of each server and solving the connection issue.*
 
-As your Minecraft servers have to run without authentication (online-mode=false) for BungeeCord to work, this poses a new security risk. Users may connect to your servers directly, under any username they wish to use. The kick "If you wish to use IP forwarding, please enable it in your BungeeCord config as well!" does not protect your Spigot servers.
+Modifications:
+- The **connect(final ServerConnectRequest request)** method in **UserConnection** has been changed to update stored IPs
+- This update happens via the **ProxyConfig** interface and is implemented as **updateServerIPs()** in the **Configuration** class
 
-To combat this, you need to restrict access to these servers for example with a firewall (please see [firewall guide](https://www.spigotmc.org/wiki/firewall-guide/)).
 
-Source
-------
-Source code is currently available on [GitHub](https://www.spigotmc.org/go/bungeecord-git).
-
-Binaries
---------
-Precompiled binaries are available for end users on [Jenkins](https://www.spigotmc.org/go/bungeecord-dl).
-
-(c) 2012-2021 SpigotMC Pty. Ltd.
+*Please note that this is a fix I made quickly for my own server and is probably not the perfect solution.*
