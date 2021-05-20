@@ -14,6 +14,8 @@ import net.md_5.bungee.api.config.ServerInfo;
 public interface ProxyConfig
 {
 
+    void updateServerIPs();
+
     /**
      * Time before users are disconnected due to no network activity.
      *

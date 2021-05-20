@@ -330,6 +330,8 @@ public final class UserConnection implements ProxiedPlayer
         };
         ChannelFutureListener listener = new ChannelFutureListener()
         {
+            // Called in main thread...
+
             @Override
             @SuppressWarnings("ThrowableResultIgnored")
             public void operationComplete(ChannelFuture future) throws Exception
@@ -344,17 +346,29 @@ public final class UserConnection implements ProxiedPlayer
                     future.channel().close();
                     pendingConnects.remove( target );
 
-                    ServerInfo def = updateAndGetNextServer( target );
-                    if ( request.isRetry() && def != null && ( getServer() == null || def != getServer().getInfo() ) )
+                    InetSocketAddress updated = (InetSocketAddress) Util.getAddr( target.getAddress().getHostName() + ":" + target.getAddress().getPort() );
+                    if ( !updated.getAddress().getHostAddress().equals( target.getAddress().getAddress().getHostAddress() ) )
                     {
-                        sendMessage( bungee.getTranslation( "fallback_lobby" ) );
-                        connect( def, null, true, ServerConnectEvent.Reason.LOBBY_FALLBACK );
-                    } else if ( dimensionChange )
-                    {
-                        disconnect( bungee.getTranslation( "fallback_kick", future.cause().getClass().getName() ) );
+                        ProxyServer.getInstance().getConfig().updateServerIPs();
+                        System.out.println( "Updated server IPs" );
+
+                        connect( ProxyServer.getInstance().getServerInfo( target.getName() ), null, false, ServerConnectEvent.Reason.UNKNOWN );
                     } else
                     {
-                        sendMessage( bungee.getTranslation( "fallback_kick", future.cause().getClass().getName() ) );
+                        ServerInfo def = updateAndGetNextServer( target );
+                        if ( request.isRetry() && def != null && ( getServer() == null || def != getServer().getInfo() ) )
+                        {
+                            sendMessage( bungee.getTranslation( "fallback_lobby" ) );
+                            connect( def, null, true, ServerConnectEvent.Reason.LOBBY_FALLBACK );
+                        } else if ( dimensionChange )
+                        {
+                            disconnect( bungee.getTranslation( "fallback_kick", future.cause().getClass().getName() ) );
+                        } else
+                        {
+                            sendMessage( bungee.getTranslation( "fallback_kick", future.cause().getClass().getName() ) );
+
+                            sendMessage( "§cCause: " + future.cause().getMessage() + " | " + future.cause().toString() );
+                        }
                     }
                 }
             }
@@ -365,6 +379,7 @@ public final class UserConnection implements ProxiedPlayer
                 .handler( initializer )
                 .option( ChannelOption.CONNECT_TIMEOUT_MILLIS, request.getConnectTimeout() )
                 .remoteAddress( target.getAddress() );
+
         // Windows is bugged, multi homed users will just have to live with random connecting IPs
         if ( getPendingConnection().getListener().isSetLocalAddress() && !PlatformDependent.isWindows() && getPendingConnection().getListener().getSocketAddress() instanceof InetSocketAddress )
         {

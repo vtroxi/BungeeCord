@@ -4,6 +4,7 @@ import com.google.common.base.Preconditions;
 import gnu.trove.map.TMap;
 import java.io.File;
 import java.io.IOException;
+import java.net.InetSocketAddress;
 import java.util.Arrays;
 import java.util.Collection;
 import java.util.Map;
@@ -11,6 +12,7 @@ import java.util.UUID;
 import java.util.logging.Level;
 import javax.imageio.ImageIO;
 import lombok.Getter;
+import net.md_5.bungee.Util;
 import net.md_5.bungee.api.Favicon;
 import net.md_5.bungee.api.ProxyConfig;
 import net.md_5.bungee.api.ProxyServer;
@@ -142,6 +144,21 @@ public class Configuration implements ProxyConfig
                 }
             }
         }
+    }
+
+
+    public void updateServerIPs()
+    {
+        TMap<String, ServerInfo> newServers = new CaseInsensitiveMap<>();
+
+        for ( ServerInfo info : servers.values() )
+        {
+            InetSocketAddress updated = (InetSocketAddress) Util.getAddr( info.getAddress().getHostName() + ":" + info.getAddress().getPort() );
+            ServerInfo updatedInfo = ProxyServer.getInstance().constructServerInfo( info.getName(), updated, info.getMotd(), info.isRestricted() );
+            newServers.put( info.getName(), updatedInfo );
+        }
+
+        servers = newServers;
     }
 
     @Override
