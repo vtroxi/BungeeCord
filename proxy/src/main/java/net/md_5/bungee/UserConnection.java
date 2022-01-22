@@ -8,6 +8,7 @@ import io.netty.channel.ChannelFuture;
 import io.netty.channel.ChannelFutureListener;
 import io.netty.channel.ChannelInitializer;
 import io.netty.channel.ChannelOption;
+import io.netty.channel.ConnectTimeoutException;
 import io.netty.util.internal.PlatformDependent;
 import java.net.InetSocketAddress;
 import java.net.SocketAddress;
@@ -148,10 +149,7 @@ public final class UserConnection implements ProxiedPlayer
 
     public void init()
     {
-        if ( getPendingConnection().getVersion() < ProtocolConstants.MINECRAFT_1_16_2 || !bungee.getConfig().isIpForward() )
-        {
-            this.entityRewrite = EntityMap.getEntityMap( getPendingConnection().getVersion() );
-        }
+        this.entityRewrite = EntityMap.getEntityMap( getPendingConnection().getVersion() );
 
         this.displayName = name;
 
@@ -386,6 +384,17 @@ public final class UserConnection implements ProxiedPlayer
             b.localAddress( getPendingConnection().getListener().getHost().getHostString(), 0 );
         }
         b.connect().addListener( listener );
+    }
+
+    private String connectionFailMessage(Throwable cause)
+    {
+        if ( cause instanceof ConnectTimeoutException )
+        {
+            return bungee.getTranslation( "timeout" );
+        } else
+        {
+            return cause.getClass().getName();
+        }
     }
 
     @Override
