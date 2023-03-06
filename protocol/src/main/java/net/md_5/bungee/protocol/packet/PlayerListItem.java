@@ -7,6 +7,8 @@ import lombok.EqualsAndHashCode;
 import lombok.NoArgsConstructor;
 import net.md_5.bungee.protocol.AbstractPacketHandler;
 import net.md_5.bungee.protocol.DefinedPacket;
+import net.md_5.bungee.protocol.PlayerPublicKey;
+import net.md_5.bungee.protocol.Property;
 import net.md_5.bungee.protocol.ProtocolConstants;
 
 @Data
@@ -31,30 +33,16 @@ public class PlayerListItem extends DefinedPacket
             {
                 case ADD_PLAYER:
                     item.username = DefinedPacket.readString( buf );
-                    item.properties = new String[ DefinedPacket.readVarInt( buf ) ][];
-                    for ( int j = 0; j < item.properties.length; j++ )
-                    {
-                        String name = DefinedPacket.readString( buf );
-                        String value = DefinedPacket.readString( buf );
-                        if ( buf.readBoolean() )
-                        {
-                            item.properties[j] = new String[]
-                            {
-                                name, value, DefinedPacket.readString( buf )
-                            };
-                        } else
-                        {
-                            item.properties[j] = new String[]
-                            {
-                                name, value
-                            };
-                        }
-                    }
+                    item.properties = DefinedPacket.readProperties( buf );
                     item.gamemode = DefinedPacket.readVarInt( buf );
                     item.ping = DefinedPacket.readVarInt( buf );
                     if ( buf.readBoolean() )
                     {
                         item.displayName = DefinedPacket.readString( buf );
+                    }
+                    if ( protocolVersion >= ProtocolConstants.MINECRAFT_1_19 )
+                    {
+                        item.publicKey = readPublicKey( buf );
                     }
                     break;
                 case UPDATE_GAMEMODE:
@@ -84,26 +72,17 @@ public class PlayerListItem extends DefinedPacket
             {
                 case ADD_PLAYER:
                     DefinedPacket.writeString( item.username, buf );
-                    DefinedPacket.writeVarInt( item.properties.length, buf );
-                    for ( String[] prop : item.properties )
-                    {
-                        DefinedPacket.writeString( prop[0], buf );
-                        DefinedPacket.writeString( prop[1], buf );
-                        if ( prop.length >= 3 )
-                        {
-                            buf.writeBoolean( true );
-                            DefinedPacket.writeString( prop[2], buf );
-                        } else
-                        {
-                            buf.writeBoolean( false );
-                        }
-                    }
+                    DefinedPacket.writeProperties( item.properties, buf );
                     DefinedPacket.writeVarInt( item.gamemode, buf );
                     DefinedPacket.writeVarInt( item.ping, buf );
                     buf.writeBoolean( item.displayName != null );
                     if ( item.displayName != null )
                     {
                         DefinedPacket.writeString( item.displayName, buf );
+                    }
+                    if ( protocolVersion >= ProtocolConstants.MINECRAFT_1_19 )
+                    {
+                        writePublicKey( item.publicKey, buf );
                     }
                     break;
                 case UPDATE_GAMEMODE:
@@ -144,20 +123,26 @@ public class PlayerListItem extends DefinedPacket
     {
 
         // ALL
-        private UUID uuid;
+        UUID uuid;
 
         // ADD_PLAYER
-        private String username;
-        private String[][] properties;
+        String username;
+        Property[] properties;
+
+        UUID chatSessionId;
+        PlayerPublicKey publicKey;
+
+        // UPDATE_LISTED
+        Boolean listed;
 
         // ADD_PLAYER & UPDATE_GAMEMODE
-        private int gamemode;
+        Integer gamemode;
 
         // ADD_PLAYER & UPDATE_LATENCY
-        private int ping;
+        Integer ping;
 
         // ADD_PLAYER & UPDATE_DISPLAY_NAME
-        private String displayName;
+        String displayName;
 
     }
 }
